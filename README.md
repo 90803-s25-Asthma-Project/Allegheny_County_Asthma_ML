@@ -1,36 +1,94 @@
 # Asthma in Allegheny County, PA: A Machine Learning Project
 
-This repository contains the code for a ML project completed as part of the *Machine Learning Foundations with Python* course at Carnegie Mellon University. For the accompanying report, see [here](https://docs.google.com/document/d/1hkgx5kfAXBgw1ZC6xaPD2KtcRmtCuz5S7xuiRFFBuqY/edit?usp=sharing).
-
-The repository is structured with code files kept in the top-level directory and datasets kept in the second-level `our-data/` directory.
-
-The main code files are:
-
-* `Emissions_Cleaning.ipynb`: cleans the emissions data preliminarily before being joined with the other data files
-* `AsthmaUtilization_Cleaning.ipynb`: handles the majority of the data cleaning, wrangling, and preprocessing
-* `Feature selection.ipynb`: explores relevant features using EDA, PCA and variance thresholding to isolate the final set of 18 fetures
-* `Models.ipynb`: contains the ML models used to predict asthma risk in Allegheny County census tracts
-
-Archive consists of additional code files that the team played with while developing the code but are not relevant to the main project:
-
-* `Gridsearch_and_Smote.ipynb`
-* `variable_threshold.ipynb`
-* `classification.ipynb`
-
-Similarly, the `our-data/` folder contains all datasets that were explored and produced in the development of this project. See the report or `AsthmaUtilization_Cleaning.ipynb` to understand the final files that were used.
-
-Bias reports can be found in the folder `Aequitas Bias Reports`
+This repository contains the machine learning pipeline developed for the **Machine Learning Foundations with Python** course at Carnegie Mellon University. This project utilizes environmental, sociodemographic, and healthcare utilization data to classify asthma risk levels in Allegheny County census tracts.
 
 ---
 
-### Executive Summary
+## Repository Structure
 
-Asthma is a common chronic illness in the United States, affecting approximately 8% of the total population. Despite relatively stable prevalence rates throughout the 21st century, both direct and indirect costs of asthma have skyrocketed and will continue to do so. These costs are alleviated via proper asthma management, including avoiding triggers and adhering to prescription regimens, but many obstacles make following these guidelines more difficult than it should be. Often, these obstacles lie outside the control of the individual such as pollution and medication costs, highlighting the need for larger-scale policy initiatives.
+Based on the project's current architecture, the files are organized as follows:
 
-The current project builds on prior research to predict areas of higher asthma risk using machine learning models. We focus on Allegheny County, where the pediatric asthma rate is higher than the national average, and compile utilization, environmental, and sociodemographic data to classify census tracts as having high (>10%) or low asthma prevalence rates. By examining several factors at once, we provide a more comprehensive picture of asthma management needs across the county.
+```text
+├── Aequitas Bias Reports/     # Detailed fairness and bias audits
+├── Archive/                  # Legacy notebooks (variable_threshold, etc.)
+├── our-data/                 # Cleaned and processed CSV datasets
+├── AsthmaUtilization_Cleaning.ipynb
+├── Emissions_Cleaning.ipynb
+├── Feature selection.ipynb
+├── Models.ipynb
+├── README.md
+└── requirements.txt
 
-We leveraged common machine learning techniques, including variance thresholding, temporal cross-validation, and hyperparameter grid search to develop three predictive models. Logistic regression exhibited subpar performance (recall = 0.62), which we attributed to the restrictive linear nature of the model. The random forest model initially had mediocre recall (0.71), but random undersampling improved this metric to 0.92, though precision dropped to 0.46. The XGBoost model performed well, achieving a recall rate of 0.89 while maintaining a precision rate of 0.90 (AUC = 0.95). Throughout the project, we paid particular attention to instances of bias and fairness in our models, with specific cases highlighted in the report.
+### Main Code Files
+1. **`Emissions_Cleaning.ipynb`**: Preliminary cleaning of EPA and local emissions data.
+2. **`AsthmaUtilization_Cleaning.ipynb`**: Core data wrangling hub, joining utilization and census data.
+3. **`Feature selection.ipynb`**: Explores relevant features using EDA, PCA, VIF, and variance thresholding to isolate the final set of 19 features.
+4. **`Models.ipynb`**: Modeling suite featuring Logistic Regression, Random Forest, and XGBoost with class imbalance handling.
 
-Our results inform three policy recommendations for Allegheny County: (1) additional funding should be directed into local initiatives via the PA Asthma Control Program; (2) emissions inspections and regulatory enforcement should take place in a proactive, rather than reactive, manner; and (3) a task force should be assembled to focus specifically on racial disparities in asthma exacerbators and to devise solutions to alleviate these inequities. Shifting a part of the asthma management burden onto policymakers will ultimately increase efficiency and mitigate costs associated with untreated or poorly treated asthma.
+---
 
-Limitations include a lack of temporal breadth and granularity of our data, which can be attributed to the limited availability of healthcare utilization data in the public domain. Most importantly, this project spanned only four weeks, whereas typical ML policy endeavors require much more time to ensure all programmatic and technical elements are present and well-validated. Thus, the results presented should be taken with an enormous grain of salt. Future directions are described and aim to address many of these shortcomings. 
+## Executive Summary
+Asthma affects approximately **8% of the US population**, but its impact is not felt equally. In Allegheny County, pediatric asthma rates exceed national averages. Our objective was to develop a binary classification task to identify census tracts with a **High Asthma Diagnosis Rate (>10%)**. 
+
+With a target class distribution of **25.9% (High Risk)**, we leveraged advanced sampling and ensemble modeling to provide a comprehensive picture of asthma management needs. The **XGBoost model** emerged as the top performer, achieving a **0.95 AUC-ROC** and a recall rate of **0.89**, demonstrating high efficacy in identifying vulnerable communities.
+
+---
+
+## Key Project Features & Methodology
+
+This project utilized a multi-stage analytical pipeline to move from 130+ raw variables down to a refined, 19-variable predictive model.
+
+### 1. Dimensionality Reduction (PCA)
+To handle the high dimensionality of environmental and sociodemographic data, we employed **Principal Component Analysis (PCA)**. This helped us identify the "latent" structures in Allegheny County’s data—such as "Urban Industrial Stress"—without overfitting the model to specific, redundant noise.
+
+
+### 2. Multi-collinearity Mitigation (VIF)
+Public health data is highly collinear (e.g., poverty levels correlating with housing age). We calculated the **Variance Inflation Factor (VIF)** to ensure model stability. We iteratively removed features with high VIF scores to ensure that each feature in the final set provided independent, unique information.
+
+### 3. Missingness & Variance Thresholding
+* **Missingness Filter**: Removed columns where more than **40% of the data was missing or zero**, ensuring a strong signal-to-noise ratio.
+* **Variance Thresholding**: Eliminated "quasi-constant" features that rarely changed across tracts to focus the model on variables that actually drive health disparities.
+
+### 4. Advanced Sampling for Class Imbalance
+Since the "High Risk" class is the minority, we implemented:
+* **SMOTE (Synthetic Minority Over-sampling Technique)**: To teach the model subtle patterns in high-risk areas.
+* **Random Undersampling (RUS)**: To balance the training set, specifically improving **Recall** to ensure no high-risk community is left behind.
+
+---
+
+## Installation and Requirements
+Ensure you have Python 3.9+ installed.
+
+### 1. Clone the repository
+```bash
+git clone [https://github.com/your-username/asthma-allegheny-ml.git](https://github.com/your-username/asthma-allegheny-ml.git)
+cd asthma-allegheny-ml
+```
+###2. Install Dependencies
+```bash
+pip install pandas numpy matplotlib seaborn scikit-learn xgboost imbalanced-learn ipython
+```
+## Code Implementation Logic
+The modeling logic in Models.ipynb follows a rigorous pipeline:
+
+<li> Temporal Cross-Validation: Data is sorted by YearOfContactDate using TimeSeriesSplit (4 folds) to prevent temporal data leakage and mimic real-world predictive deployment. </li>
+
+<li> Preprocessing: Features are scaled using StandardScaler within a ColumnTransformer. </li>
+
+<li> Hyperparameter Tuning: GridSearchCV was used to optimize PR-AUC (Precision-Recall Area Under Curve). For XGBoost, this involved tuning gamma, learning_rate, max_depth, and reg_alpha. </li>
+
+<li> Threshold Optimization: We explored custom classification thresholds (e.g., 0.3 and 0.4) to prioritize Recall over Accuracy, as the public health cost of missing a high-risk tract is significant. </li>
+
+## Feature Importance
+Our models consistently identified the following as the most influential drivers of asthma risk:
+
+<li> NumberED_VisitsAge0to17Per100: The strongest proxy for uncontrolled asthma. </li>
+
+<li>Carbon Monoxide: A primary environmental predictor. </li>
+
+<li> Age0to17PopEst: Highlighting the demographic vulnerability of the pediatric population. </li>
+
+## Policy Recommendations
+<li> Localized Funding: Direct resources to the PA Asthma Control Program for identified "High Risk" tracts. </li>
+<li> Proactive Regulation: Use pollutants like Carbon Monoxide as triggers for proactive emissions inspections. </li>
+<li>Equity Task Force: Specifically address racial disparities highlighted by the positive correlation between the Black/African American population and high diagnosis rates. </li>
